@@ -83,14 +83,14 @@
         const firebaseConfig = {
             apiKey: "AIzaSyAiG3c-wxi7ugArZc0ScZRzWe6cI2pSl4U",
             authDomain: "copa-wizarcon.firebaseapp.com",
-            databaseURL: "https://copa-wizarcon-default-rtdb.firebaseio.com",
+            databaseURL: "https://copa-wizarcon-default-rtdb.firebaseio.com/",
             projectId: "copa-wizarcon",
             storageBucket: "copa-wizarcon.firebasestorage.app",
             messagingSenderId: "177951654125",
             appId: "1:177951654125:web:51ee03a5ad4ef059484ce4",
             measurementId: "G-TSJCCLHWRY"
         };
-        
+
         const app = initializeApp(firebaseConfig);
         const dbCloud = getDatabase(app);
         const copaRef = ref(dbCloud, 'wizarcon_copa');
