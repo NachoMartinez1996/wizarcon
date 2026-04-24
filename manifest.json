@@ -1,7 +1,9 @@
 {
   "name": "WizarCon Cup",
   "short_name": "WizarCon",
-  "start_url": "index.html",
+  "lang": "es-AR",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#740001",
