@@ -1,0 +1,168 @@
+        :root {
+            --gryffindor: #740001;
+            --hufflepuff: #ecb939;
+            --ravenclaw: #0e1a40;
+            --slytherin: #1a472a;
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        h1,
+        h3 {
+            text-align: center;
+            color: #ffd700;
+            margin-top: 0;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background: #2a2a2a;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .house-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .house-btn {
+            border: none;
+            padding: 18px 5px;
+            color: white;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .house-btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        .btn-gry {
+            background: var(--gryffindor);
+            box-shadow: 0 4px #4a0000;
+        }
+
+        .btn-huf {
+            background: var(--hufflepuff);
+            color: black;
+            box-shadow: 0 4px #b08d2b;
+        }
+
+        .btn-rav {
+            background: var(--ravenclaw);
+            box-shadow: 0 4px #060d21;
+        }
+
+        .btn-sly {
+            background: var(--slytherin);
+            box-shadow: 0 4px #0d2616;
+        }
+
+        .act-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2a2a2a;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+
+        .btn-del {
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .btn-undo {
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .total-pts {
+            font-weight: bold;
+            color: #ffd700;
+            font-size: 1.1rem;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* Estilo para el contenedor del historial con scroll */
+        .historial-container {
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding-right: 5px;
+        }
+
+        /* Scrollbar personalizado para que quede lindo */
+        .historial-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .historial-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 3px;
+        }

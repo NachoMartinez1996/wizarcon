@@ -1,54 +1,21 @@
 <!DOCTYPE html>
 <html lang="es-Ar">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WizarCon - Copa de las Casas</title>
+
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="Favicon/favicon.ico">
-    <link rel="icon" type="image/png" sizes="16x16" href="Favicon/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="Favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="Favicon/favicon-96x96.png">
-    <link rel="apple-touch-icon" sizes="57x57" href="Favicon/apple-icon.png">
-    <link rel="apple-touch-icon" sizes="60x60" href="Favicon/apple-icon-60x60.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="Favicon/apple-icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="76x76" href="Favicon/apple-icon-76x76.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="Favicon/apple-icon-114x114.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="Favicon/apple-icon-120x120.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="Favicon/apple-icon-144x144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="Favicon/apple-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="Favicon/apple-icon-180x180.png">
     <link rel="icon" type="image/png" sizes="192x192" href="Favicon/android-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="Favicon/favicon-32x32.png">
-    <meta name="msapplication-TileColor" content="#740001">
-    <meta name="msapplication-TileImage" content="Favicon/ms-icon-144x144.png">
-    <meta name="msapplication-config" content="Favicon/browserconfig.xml">
+    <link rel="apple-touch-icon" sizes="180x180" href="Favicon/apple-icon-180x180.png">
     <meta name="theme-color" content="#0e1a40">
+    <link rel="stylesheet" href="style.css">
     <style>
-        :root {
-            --gryffindor: #740001; --hufflepuff: #ecb939;
-            --ravenclaw: #0e1a40; --slytherin: #1a472a;
-            --bg: #121212; --card: #1e1e1e; --text: #e0e0e0;
-        }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
-        h1, h3 { text-align: center; color: #ffd700; margin-top: 0; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #444; border-radius: 8px; background: #2a2a2a; color: white; box-sizing: border-box; }
-        .house-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-        .house-btn { border: none; padding: 18px 5px; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
-        .house-btn:active { transform: scale(0.95); opacity: 0.8; }
-        .btn-gry { background: var(--gryffindor); box-shadow: 0 4px #4a0000; }
-        .btn-huf { background: var(--hufflepuff); color: black; box-shadow: 0 4px #b08d2b; }
-        .btn-rav { background: var(--ravenclaw); box-shadow: 0 4px #060d21; }
-        .btn-sly { background: var(--slytherin); box-shadow: 0 4px #0d2616; }
-        .act-item { display: flex; justify-content: space-between; align-items: center; background: #2a2a2a; padding: 8px 12px; margin-bottom: 5px; border-radius: 5px; }
-        .btn-del { background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
-        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #333; }
-        .total-pts { font-weight: bold; color: #ffd700; font-size: 1.1rem; }
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:1000; }
     </style>
 </head>
+
 <body>
 
     <div id="loading-overlay">🔮 Conectando con el Ministerio...</div>
@@ -57,6 +24,8 @@
 
     <div class="card">
         <h3>⚡ Cargar Puntos</h3>
+        <p style="font-size: 0.8rem; color: #aaa; text-align: center; margin-top: -10px;">(Para restar, escribí un
+            número negativo como -10)</p>
         <label>Actividad:</label>
         <select id="select-actividad"></select>
         <label>Cantidad:</label>
@@ -74,6 +43,12 @@
         <table id="tabla-posiciones"></table>
     </div>
 
+    <div class="card">
+        <h3>📜 Historial de Movimientos</h3>
+        <div class="historial-container" id="lista-historial">
+        </div>
+    </div>
+
     <div class="card" style="border-style: dashed; border-color: #555;">
         <h3>⚙️ Ajustes del Evento</h3>
         <h4>1. Puntos Iniciales</h4>
@@ -87,115 +62,16 @@
         <h4>2. Actividades</h4>
         <div style="display:flex; gap:5px;">
             <input type="text" id="nueva-act-nombre" placeholder="Nombre">
-            <button onclick="crearActividad()" style="background:#4CAF50; color:white; border:none; border-radius:8px; padding:0 15px;">+</button>
+            <button onclick="crearActividad()"
+                style="background:#4CAF50; color:white; border:none; border-radius:8px; padding:0 15px;">+</button>
         </div>
         <div id="lista-actividades" style="margin-top:15px;"></div>
-        <button onclick="resetearTodo()" style="width:100%; background:none; border:1px solid #ff4444; color:#ff4444; margin-top:20px; padding:10px; border-radius:8px;">🗑️ Reiniciar Copa</button>
+        <button onclick="resetearTodo()"
+            style="width:100%; background:none; border:1px solid #ff4444; color:#ff4444; margin-top:20px; padding:10px; border-radius:8px;">🗑️
+            Reiniciar Copa Completa</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        // CONFIGURACIÓN DE FIREBASE (Copiá la tuya aquí)
-// CONFIGURACIÓN DE FIREBASE (Actualizada con tus datos reales)
-        const firebaseConfig = {
-            apiKey: "AIzaSyAiG3c-wxi7ugArZc0ScZRzWe6cI2pSl4U",
-            authDomain: "copa-wizarcon.firebaseapp.com",
-            databaseURL: "https://copa-wizarcon-default-rtdb.firebaseio.com/",
-            projectId: "copa-wizarcon",
-            storageBucket: "copa-wizarcon.firebasestorage.app",
-            messagingSenderId: "177951654125",
-            appId: "1:177951654125:web:51ee03a5ad4ef059484ce4",
-            measurementId: "G-TSJCCLHWRY"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const dbCloud = getDatabase(app);
-        const copaRef = ref(dbCloud, 'wizarcon_copa');
-
-        // Estado local de la App
-        let db = {
-            bases: { Gryffindor: 0, Hufflepuff: 0, Ravenclaw: 0, Slytherin: 0 },
-            actividades: ["General"],
-            puntosEvento: { Gryffindor: 0, Hufflepuff: 0, Ravenclaw: 0, Slytherin: 0 }
-        };
-
-        // Escuchar cambios en tiempo real
-        onValue(copaRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                db = data;
-                renderizarUI();
-            } else {
-                // Si la base está vacía, la inicializamos
-                set(copaRef, db);
-            }
-            document.getElementById('loading-overlay').style.display = 'none';
-        });
-
-        // Funciones Globales (unidas a window para que los botones las vean)
-        window.registrarPuntos = (casa) => {
-            const pts = parseInt(document.getElementById('puntos-input').value) || 0;
-            db.puntosEvento[casa] += pts;
-            set(copaRef, db);
-        };
-
-        window.actualizarBases = () => {
-            for (let casa in db.bases) {
-                db.bases[casa] = parseInt(document.getElementById(`base-${casa}`).value) || 0;
-            }
-            set(copaRef, db);
-        };
-
-        window.crearActividad = () => {
-            const nombre = document.getElementById('nueva-act-nombre').value.trim();
-            if (nombre && !db.actividades.includes(nombre)) {
-                db.actividades.push(nombre);
-                document.getElementById('nueva-act-nombre').value = "";
-                set(copaRef, db);
-            }
-        };
-
-        window.borrarActividad = (index) => {
-            db.actividades.splice(index, 1);
-            set(copaRef, db);
-        };
-
-        window.resetearTodo = () => {
-            if (confirm("¿Reiniciar toda la copa?")) {
-                const reset = {
-                    bases: { Gryffindor: 0, Hufflepuff: 0, Ravenclaw: 0, Slytherin: 0 },
-                    actividades: ["General"],
-                    puntosEvento: { Gryffindor: 0, Hufflepuff: 0, Ravenclaw: 0, Slytherin: 0 }
-                };
-                set(copaRef, reset);
-            }
-        };
-
-        function renderizarUI() {
-            // Actualizar Select
-            document.getElementById('select-actividad').innerHTML = db.actividades.map(a => `<option>${a}</option>`).join('');
-            
-            // Actualizar Lista Actividades
-            document.getElementById('lista-actividades').innerHTML = db.actividades.map((a, i) => `
-                <div class="act-item"><span>${a}</span><button class="btn-del" onclick="borrarActividad(${i})">✕</button></div>
-            `).join('');
-
-            // Actualizar Tabla y Inputs
-            const casas = Object.keys(db.bases).sort((a,b) => (db.bases[b]+db.puntosEvento[b]) - (db.bases[a]+db.puntosEvento[a]));
-            document.getElementById('tabla-posiciones').innerHTML = `
-                <tr><th>Casa</th><th style="text-align:right">Total</th></tr>
-                ${casas.map(c => `<tr>
-                    <td>${c === 'Gryffindor' ? '🦁' : c === 'Hufflepuff' ? '🦡' : c === 'Ravenclaw' ? '🦅' : '🐍'} ${c}</td>
-                    <td style="text-align:right" class="total-pts">${db.bases[c] + db.puntosEvento[c]}</td>
-                </tr>`).join('')}
-            `;
-            
-            for (let casa in db.bases) {
-                document.getElementById(`base-${casa}`).value = db.bases[casa];
-            }
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
+
 </html>
