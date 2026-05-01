@@ -9,6 +9,7 @@ const HOUSE_ICONS = {
     Slytherin: "🐍",
 };
 
+const ALL_ACTIVITIES_FILTER = "__all__";
 const PENDING_STATE_KEY = "wizarcon_copa_pending_state";
 const LAST_SYNCED_STATE_KEY = "wizarcon_copa_last_synced_state";
 
@@ -18,6 +19,7 @@ const selectActividadEl = document.getElementById("select-actividad");
 const puntosInputEl = document.getElementById("puntos-input");
 const tablaPosicionesEl = document.getElementById("tabla-posiciones");
 const historialEl = document.getElementById("lista-historial");
+const filtroHistorialEl = document.getElementById("filtro-historial");
 const listaActividadesEl = document.getElementById("lista-actividades");
 const nuevaActividadEl = document.getElementById("nueva-act-nombre");
 
@@ -72,6 +74,8 @@ function normalizeHistoryEntry(entry) {
         casa,
         puntos: Number.isNaN(puntos) ? 0 : puntos,
         actividad: String(entry.actividad ?? "General").trim() || "General",
+        fecha: String(entry.fecha ?? entry.dia ?? "").trim(),
+        fechaISO: String(entry.fechaISO ?? "").trim(),
         hora: String(entry.hora ?? "").trim() || "--:--",
     };
 }
@@ -137,6 +141,29 @@ function clearStatus() {
 function getSelectedActivity(fallback = db.actividades[0]) {
     const currentValue = selectActividadEl.value;
     return db.actividades.includes(currentValue) ? currentValue : fallback;
+}
+
+function getSelectedHistoryActivity() {
+    return filtroHistorialEl.value || ALL_ACTIVITIES_FILTER;
+}
+
+function formatHistoryDate(registro) {
+    if (registro.fecha) {
+        return registro.fecha;
+    }
+
+    if (registro.fechaISO) {
+        const parsedDate = new Date(registro.fechaISO);
+        if (!Number.isNaN(parsedDate.getTime())) {
+            return parsedDate.toLocaleDateString("es-AR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+            });
+        }
+    }
+
+    return "Fecha no registrada";
 }
 
 let db = createDefaultState();
@@ -289,7 +316,7 @@ async function guardarCambios() {
     await syncPendingLocalChanges();
 }
 
-function renderizarUI(selectedActivity = getSelectedActivity()) {
+function renderizarUI(selectedActivity = getSelectedActivity(), selectedHistoryActivity = getSelectedHistoryActivity()) {
     if (db.actividades.length === 0) {
         db.actividades = ["General"];
     }
@@ -314,16 +341,38 @@ function renderizarUI(selectedActivity = getSelectedActivity()) {
         `)
         .join("");
 
+    const actividadesHistorial = [...new Set([
+        ...db.actividades,
+        ...db.historial.map((registro) => registro.actividad),
+    ].filter(Boolean))];
+    const filtroActivo = selectedHistoryActivity === ALL_ACTIVITIES_FILTER
+        || actividadesHistorial.includes(selectedHistoryActivity)
+        ? selectedHistoryActivity
+        : ALL_ACTIVITIES_FILTER;
+
+    filtroHistorialEl.innerHTML = `
+        <option value="${ALL_ACTIVITIES_FILTER}">Todas las actividades</option>
+        ${actividadesHistorial
+            .map((actividad) => `<option value="${escapeHtml(actividad)}">${escapeHtml(actividad)}</option>`)
+            .join("")}
+    `;
+    filtroHistorialEl.value = filtroActivo;
+
+    const registrosHistorial = db.historial
+        .map((registro, index) => ({ registro, index }))
+        .filter(({ registro }) => filtroActivo === ALL_ACTIVITIES_FILTER || registro.actividad === filtroActivo);
+
     if (db.historial.length === 0) {
         historialEl.innerHTML = '<p style="text-align:center; color:#888; font-size:0.85rem;">No hay movimientos registrados.</p>';
+    } else if (registrosHistorial.length === 0) {
+        historialEl.innerHTML = '<p style="text-align:center; color:#888; font-size:0.85rem;">No hay movimientos para esta actividad.</p>';
     } else {
-        historialEl.innerHTML = db.historial
-            .slice()
+        historialEl.innerHTML = registrosHistorial
             .reverse()
-            .map((registro, reverseIndex) => {
-                const realIndex = db.historial.length - 1 - reverseIndex;
+            .map(({ registro, index }) => {
                 const sign = registro.puntos > 0 ? "+" : "";
                 const color = registro.puntos > 0 ? "#4CAF50" : "#ff4444";
+                const fecha = formatHistoryDate(registro);
 
                 return `
                     <div class="act-item" style="font-size: 0.85rem; padding: 10px;">
@@ -331,9 +380,9 @@ function renderizarUI(selectedActivity = getSelectedActivity()) {
                             <strong style="color: #ffd700;">${escapeHtml(registro.casa)}</strong>:
                             <span style="color:${color}; font-weight:bold;">${sign}${registro.puntos} pts</span>
                             <br>
-                            <span style="color:#aaa;">${escapeHtml(registro.actividad)} • 🕒 ${escapeHtml(registro.hora)}</span>
+                            <span style="color:#aaa;">${escapeHtml(registro.actividad)} • ${escapeHtml(fecha)} • 🕒 ${escapeHtml(registro.hora)}</span>
                         </div>
-                        <button class="btn-undo" onclick="deshacerMovimiento(${realIndex})">↩ Deshacer</button>
+                        <button class="btn-undo" onclick="deshacerMovimiento(${index})">↩ Deshacer</button>
                     </div>
                 `;
             })
@@ -368,12 +417,19 @@ window.registrarPuntos = async (casa) => {
     }
 
     const actividad = getSelectedActivity();
+    const ahora = new Date();
     db.puntosEvento[casa] += puntos;
     db.historial.push({
         casa,
         puntos,
         actividad,
-        hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+        fecha: ahora.toLocaleDateString("es-AR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        }),
+        fechaISO: ahora.toISOString(),
+        hora: ahora.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
     });
 
     renderizarUI(actividad);
@@ -454,6 +510,10 @@ nuevaActividadEl.addEventListener("keydown", (event) => {
         event.preventDefault();
         window.crearActividad();
     }
+});
+
+filtroHistorialEl.addEventListener("change", () => {
+    renderizarUI(getSelectedActivity(), getSelectedHistoryActivity());
 });
 
 if (restoreLocalState()) {

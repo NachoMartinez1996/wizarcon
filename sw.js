@@ -1,4 +1,4 @@
-const CACHE_NAME = "wizarcon-v3";
+const CACHE_NAME = "wizarcon-v4.0.01";
 const FIREBASE_CDN_PREFIX = "https://www.gstatic.com/firebasejs/10.7.1/";
 const ASSETS = [
   "./",
