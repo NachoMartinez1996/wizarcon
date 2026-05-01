@@ -1,4 +1,5 @@
-const CACHE_NAME = "wizarcon-v2";
+const CACHE_NAME = "wizarcon-v3";
+const FIREBASE_CDN_PREFIX = "https://www.gstatic.com/firebasejs/10.7.1/";
 const ASSETS = [
   "./",
   "./index.html",
@@ -12,6 +13,11 @@ const ASSETS = [
   "./Favicon/apple-icon.png",
   "./Favicon/android-icon-192x192.png",
 ];
+
+function shouldCache(request) {
+  const url = new URL(request.url);
+  return url.origin === self.location.origin || url.href.startsWith(FIREBASE_CDN_PREFIX);
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -41,7 +47,7 @@ self.addEventListener("fetch", (event) => {
 
       return fetch(event.request)
         .then((networkResponse) => {
-          if (event.request.url.startsWith(self.location.origin)) {
+          if (networkResponse.ok && shouldCache(event.request)) {
             const responseClone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
           }

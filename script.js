@@ -9,6 +9,9 @@ const HOUSE_ICONS = {
     Slytherin: "🐍",
 };
 
+const PENDING_STATE_KEY = "wizarcon_copa_pending_state";
+const LAST_SYNCED_STATE_KEY = "wizarcon_copa_last_synced_state";
+
 const loadingOverlayEl = document.getElementById("loading-overlay");
 const statusBannerEl = document.getElementById("status-banner");
 const selectActividadEl = document.getElementById("select-actividad");
@@ -138,20 +141,152 @@ function getSelectedActivity(fallback = db.actividades[0]) {
 
 let db = createDefaultState();
 let copaRef = null;
+let hasPendingLocalChanges = false;
+let isSyncingPendingChanges = false;
+let isFirebaseConnected = navigator.onLine;
+let hasFirebaseConnectionState = false;
 
-async function guardarCambios() {
-    if (!copaRef) {
-        showStatus("La conexión con Firebase no está disponible en este momento.", "error");
+function readLocalState(storageKey) {
+    try {
+        const rawState = localStorage.getItem(storageKey);
+        if (!rawState) {
+            return null;
+        }
+
+        const parsedState = JSON.parse(rawState);
+        const state = parsedState?.state ?? parsedState;
+        const hasKnownStateShape = state && typeof state === "object" && [
+            "bases",
+            "puntosEvento",
+            "actividades",
+            "historial",
+        ].some((key) => Object.prototype.hasOwnProperty.call(state, key));
+
+        return hasKnownStateShape ? normalizeState(state) : null;
+    } catch (error) {
+        console.error("No se pudo leer la copia local.", error);
+        return null;
+    }
+}
+
+function writeLocalState(storageKey, state) {
+    try {
+        localStorage.setItem(storageKey, JSON.stringify({
+            savedAt: new Date().toISOString(),
+            state,
+        }));
+        return true;
+    } catch (error) {
+        console.error("No se pudo guardar la copia local.", error);
+        showStatus("No se pudo guardar una copia local en este dispositivo.", "error");
+        return false;
+    }
+}
+
+function removeLocalState(storageKey) {
+    try {
+        localStorage.removeItem(storageKey);
+    } catch (error) {
+        console.error("No se pudo borrar la copia local.", error);
+    }
+}
+
+function restoreLocalState() {
+    const pendingState = readLocalState(PENDING_STATE_KEY);
+    if (pendingState) {
+        db = pendingState;
+        hasPendingLocalChanges = true;
+        return true;
+    }
+
+    const lastSyncedState = readLocalState(LAST_SYNCED_STATE_KEY);
+    if (lastSyncedState) {
+        db = lastSyncedState;
+        return true;
+    }
+
+    return false;
+}
+
+function savePendingLocalChanges() {
+    hasPendingLocalChanges = true;
+    return writeLocalState(PENDING_STATE_KEY, db);
+}
+
+function clearPendingLocalChanges() {
+    removeLocalState(PENDING_STATE_KEY);
+    hasPendingLocalChanges = false;
+}
+
+function saveLastSyncedState() {
+    writeLocalState(LAST_SYNCED_STATE_KEY, db);
+}
+
+function canSyncWithFirebase() {
+    return Boolean(copaRef && isFirebaseConnected);
+}
+
+function updateSyncStatus() {
+    if (hasPendingLocalChanges) {
+        if (isSyncingPendingChanges) {
+            showStatus("Sincronizando cambios pendientes con Firebase...", "info");
+            return;
+        }
+
+        if (canSyncWithFirebase()) {
+            showStatus("Cambios guardados en este dispositivo. Esperando confirmacion de Firebase...", "warning");
+            return;
+        }
+
+        showStatus("Sin conexion: los cambios quedan guardados en este dispositivo y se sincronizan al volver la senal.", "warning");
         return;
     }
 
+    if (!navigator.onLine || (hasFirebaseConnectionState && !isFirebaseConnected)) {
+        showStatus("Sin conexion: podes cargar puntos y se guardaran en este dispositivo.", "warning");
+        return;
+    }
+
+    clearStatus();
+}
+
+async function syncPendingLocalChanges() {
+    if (!hasPendingLocalChanges || isSyncingPendingChanges || !canSyncWithFirebase()) {
+        updateSyncStatus();
+        return;
+    }
+
+    const pendingState = readLocalState(PENDING_STATE_KEY);
+    if (pendingState) {
+        db = pendingState;
+        renderizarUI();
+    }
+
+    isSyncingPendingChanges = true;
+    updateSyncStatus();
+
     try {
         await set(copaRef, db);
-        clearStatus();
+        clearPendingLocalChanges();
+        saveLastSyncedState();
     } catch (error) {
-        console.error("No se pudieron guardar los cambios.", error);
-        showStatus("No se pudieron guardar los cambios. Revisá la conexión e intentá de nuevo.", "error");
+        console.error("No se pudieron sincronizar los cambios pendientes.", error);
+        showStatus("No se pudo sincronizar todavia. Los cambios siguen guardados en este dispositivo.", "error");
+    } finally {
+        isSyncingPendingChanges = false;
+        updateSyncStatus();
     }
+}
+
+async function guardarCambios() {
+    const savedLocalCopy = savePendingLocalChanges();
+    if (!savedLocalCopy && !canSyncWithFirebase()) {
+        showStatus("No se pudo guardar una copia local. No cierres la app hasta recuperar conexion.", "error");
+        return;
+    }
+
+    updateSyncStatus();
+    await syncPendingLocalChanges();
 }
 
 function renderizarUI(selectedActivity = getSelectedActivity()) {
@@ -321,19 +456,47 @@ nuevaActividadEl.addEventListener("keydown", (event) => {
     }
 });
 
+if (restoreLocalState()) {
+    renderizarUI();
+    hideLoadingOverlay();
+    updateSyncStatus();
+}
+
 try {
     const app = initializeApp(firebaseConfig);
     const dbCloud = getDatabase(app);
     copaRef = ref(dbCloud, "wizarcon_copa");
+    const connectedRef = ref(dbCloud, ".info/connected");
+
+    onValue(connectedRef, (snapshot) => {
+        hasFirebaseConnectionState = true;
+        isFirebaseConnected = navigator.onLine && snapshot.val() === true;
+        updateSyncStatus();
+
+        if (isFirebaseConnected) {
+            void syncPendingLocalChanges();
+        }
+    });
 
     onValue(
         copaRef,
         (snapshot) => {
             const data = snapshot.val();
+
+            if (hasPendingLocalChanges) {
+                renderizarUI();
+                hideLoadingOverlay();
+                void syncPendingLocalChanges();
+                return;
+            }
+
             db = normalizeState(data);
 
             if (data === null) {
                 void guardarCambios();
+            } else {
+                saveLastSyncedState();
+                updateSyncStatus();
             }
 
             renderizarUI();
@@ -352,6 +515,17 @@ try {
     renderizarUI();
     hideLoadingOverlay();
 }
+
+window.addEventListener("online", () => {
+    updateSyncStatus();
+    void syncPendingLocalChanges();
+});
+
+window.addEventListener("offline", () => {
+    hasFirebaseConnectionState = true;
+    isFirebaseConnected = false;
+    updateSyncStatus();
+});
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
     window.addEventListener("load", async () => {
