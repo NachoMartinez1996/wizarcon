@@ -105,6 +105,14 @@
             font: inherit;
         }
 
+        .is-hidden {
+            display: none !important;
+        }
+
+        .app-view {
+            width: 100%;
+        }
+
         .house-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -214,6 +222,35 @@
             background: rgba(255, 255, 255, 0.055);
             color: #f5f5f5;
             font-weight: 700;
+        }
+
+        .btn-secondary-view,
+        .btn-back-view {
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .btn-secondary-view {
+            width: 100%;
+            margin-top: 14px;
+            padding: 11px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            color: #f4f4f4;
+        }
+
+        .btn-back-view {
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(0, 0, 0, 0.22);
+            color: #f4f4f4;
+        }
+
+        .btn-secondary-view:active,
+        .btn-back-view:active {
+            transform: scale(0.98);
         }
 
         .cup-history-card h3 {

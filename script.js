@@ -31,11 +31,14 @@ const DEFAULT_CUP_HISTORY = [
 ];
 
 const ALL_ACTIVITIES_FILTER = "__all__";
+const CUP_HISTORY_HASH = "#copas";
 const PENDING_STATE_KEY = "wizarcon_copa_pending_state";
 const LAST_SYNCED_STATE_KEY = "wizarcon_copa_last_synced_state";
 
 const loadingOverlayEl = document.getElementById("loading-overlay");
 const statusBannerEl = document.getElementById("status-banner");
+const vistaCopaEl = document.getElementById("vista-copa");
+const vistaHistorialCopasEl = document.getElementById("vista-historial-copas");
 const selectActividadEl = document.getElementById("select-actividad");
 const puntosInputEl = document.getElementById("puntos-input");
 const tablaPosicionesEl = document.getElementById("tabla-posiciones");
@@ -409,6 +412,10 @@ function buildCupStatsHtml(copas) {
     const bestStreak = stats.bestStreaks[0];
     const activeStreak = stats.activeStreak;
     const bestStreakHouses = [...new Set(stats.bestStreaks.map((streak) => streak.casa))];
+    const housesByWins = [...HOUSE_ORDER].sort((a, b) => {
+        const winsDiff = stats.winsByHouse[b] - stats.winsByHouse[a];
+        return winsDiff || HOUSE_ORDER.indexOf(a) - HOUSE_ORDER.indexOf(b);
+    });
 
     return `
         <div class="cup-stat-list">
@@ -429,7 +436,7 @@ function buildCupStatsHtml(copas) {
             </div>
         </div>
         <div class="house-win-list">
-            ${HOUSE_ORDER.map((casa) => `
+            ${housesByWins.map((casa) => `
                 <div>
                     <span>${formatHouseName(casa)}</span>
                     <strong>${formatCupCount(stats.winsByHouse[casa])}</strong>
@@ -462,6 +469,42 @@ function renderCupHistory() {
     }
 
     estadisticasCopasEl.innerHTML = buildCupStatsHtml(copas);
+}
+
+function getViewFromLocation() {
+    return window.location.hash === CUP_HISTORY_HASH ? "historial-copas" : "copa";
+}
+
+function updateViewUrl(showCupHistory) {
+    if (showCupHistory && window.location.hash !== CUP_HISTORY_HASH) {
+        window.history.pushState(null, "", CUP_HISTORY_HASH);
+        return;
+    }
+
+    if (!showCupHistory && window.location.hash) {
+        window.history.pushState(null, "", `${window.location.pathname}${window.location.search}`);
+    }
+}
+
+function mostrarVista(viewName, updateUrl = true) {
+    const showCupHistory = viewName === "historial-copas";
+
+    vistaCopaEl?.classList.toggle("is-hidden", showCupHistory);
+    vistaHistorialCopasEl?.classList.toggle("is-hidden", !showCupHistory);
+
+    if (showCupHistory) {
+        renderCupHistory();
+    }
+
+    if (updateUrl) {
+        updateViewUrl(showCupHistory);
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function mostrarVistaDesdeUrl() {
+    mostrarVista(getViewFromLocation(), false);
 }
 
 function hideLoadingOverlay() {
@@ -756,6 +799,14 @@ function renderizarUI(selectedActivity = getSelectedActivity(), selectedHistoryA
     });
 }
 
+window.mostrarHistorialCopas = () => {
+    mostrarVista("historial-copas");
+};
+
+window.mostrarVistaPrincipal = () => {
+    mostrarVista("copa");
+};
+
 window.registrarPuntos = async (casa) => {
     if (!HOUSE_ORDER.includes(casa)) {
         return;
@@ -935,6 +986,10 @@ nuevaActividadEl.addEventListener("keydown", (event) => {
 filtroHistorialEl.addEventListener("change", () => {
     renderizarUI(getSelectedActivity(), getSelectedHistoryActivity());
 });
+
+window.addEventListener("popstate", mostrarVistaDesdeUrl);
+window.addEventListener("hashchange", mostrarVistaDesdeUrl);
+mostrarVistaDesdeUrl();
 
 if (restoreLocalState()) {
     renderizarUI();

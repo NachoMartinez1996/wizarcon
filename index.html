@@ -21,6 +21,7 @@
 
     <h1>🏆 Copa de las Casas</h1>
 
+    <main id="vista-copa" class="app-view">
     <div class="card">
         <h3>⚡ Cargar Puntos</h3>
         <p style="font-size: 0.8rem; color: #aaa; text-align: center; margin-top: -10px;">(Para restar, escribí un
@@ -41,16 +42,7 @@
         <h3>📊 Posiciones en Vivo</h3>
         <p id="copa-actual-resumen" class="winner-banner"></p>
         <table id="tabla-posiciones"></table>
-    </div>
-
-    <div class="card cup-history-card">
-        <h3>🏰 Historial de Copas</h3>
-        <div class="cup-history-layout">
-            <div class="cup-table-wrap">
-                <table id="tabla-copas"></table>
-            </div>
-            <div id="estadisticas-copas" class="cup-stats"></div>
-        </div>
+        <button onclick="mostrarHistorialCopas()" class="btn-secondary-view">🏰 Ver Historial de Copas</button>
     </div>
 
     <div class="card">
@@ -83,6 +75,20 @@
             style="width:100%; background:none; border:1px solid #ff4444; color:#ff4444; margin-top:10px; padding:10px; border-radius:8px;">🗑️
             Reiniciar Copa Actual</button>
     </div>
+    </main>
+
+    <section id="vista-historial-copas" class="app-view is-hidden">
+        <button onclick="mostrarVistaPrincipal()" class="btn-back-view">← Volver a Copa Actual</button>
+        <div class="card cup-history-card">
+            <h3>🏰 Historial de Copas</h3>
+            <div class="cup-history-layout">
+                <div class="cup-table-wrap">
+                    <table id="tabla-copas"></table>
+                </div>
+                <div id="estadisticas-copas" class="cup-stats"></div>
+            </div>
+        </div>
+    </section>
 
     <script type="module" src="script.js"></script>
 </body>
