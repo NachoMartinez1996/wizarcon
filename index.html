@@ -42,6 +42,10 @@
         <h3>📊 Posiciones en Vivo</h3>
         <p id="copa-actual-resumen" class="winner-banner"></p>
         <table id="tabla-posiciones"></table>
+        <div class="share-actions">
+            <button onclick="compartirTarjetaActual()" class="btn-share-card">✨ Compartir tarjeta</button>
+            <button onclick="descargarTarjetaActual()" class="btn-download-card">⬇ Descargar PNG</button>
+        </div>
         <button onclick="mostrarHistorialCopas()" class="btn-secondary-view">🏰 Ver Historial de Copas</button>
     </div>
 
@@ -87,7 +91,12 @@
                 </div>
                 <div id="estadisticas-copas" class="cup-stats"></div>
             </div>
+            <div id="detalle-copa" class="cup-detail"></div>
         </div>
+    </section>
+
+    <section id="vista-ceremonia" class="app-view is-hidden">
+        <div id="ceremonia-contenido"></div>
     </section>
 
     <script type="module" src="script.js"></script>
