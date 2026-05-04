@@ -44,6 +44,9 @@ const SHARE_CARD_SIZE = {
     width: 1080,
     height: 1350,
 };
+const CURRENT_CUP_SUMMARY = "La Copa sigue en juego: cada punto cuenta.";
+const PARTIAL_CARD_STATUS = "Cada casa puede cambiar la historia";
+const HOGWARTS_MOTTO_ES = "Nunca le hagas cosquillas a un dragón dormido.";
 const DEFAULT_CUP_HISTORY = [
     { copa: 1, anio: "2012", ganador: "Slytherin" },
     { copa: 2, anio: "2013", ganador: "Gryffindor" },
@@ -420,12 +423,8 @@ function applyHouseTheme() {
 }
 
 function buildCurrentCupSummary(leaderInfo) {
-    if (leaderInfo.hasPoints && leaderInfo.winner) {
-        return `Va ganando ${formatHouseName(leaderInfo.winner)} con ${leaderInfo.maxScore} pts`;
-    }
-
     if (leaderInfo.hasPoints) {
-        return `Empate en la punta: ${formatHouseList(leaderInfo.leaders)} (${leaderInfo.maxScore} pts)`;
+        return CURRENT_CUP_SUMMARY;
     }
 
     const latestCup = getLatestCup();
@@ -474,26 +473,22 @@ function getCurrentShareCardData() {
     const rows = getScoreRowsFromMap(scores);
     const leaderInfo = getLeaderInfo(scores);
     const themeHouse = leaderInfo.winner ?? getThemeHouse() ?? rows[0]?.casa ?? HOUSE_ORDER[0];
-    const status = leaderInfo.winner
-        ? `Va ganando ${leaderInfo.winner}`
-        : leaderInfo.hasPoints
-            ? "Empate en la punta"
-            : "Copa sin puntos cargados";
-    const detail = leaderInfo.hasPoints
-        ? `${leaderInfo.maxScore} pts en la punta`
-        : "Resultados parciales";
+    const status = leaderInfo.hasPoints
+        ? PARTIAL_CARD_STATUS
+        : "Copa sin puntos cargados";
 
     return {
         title: "Copa de las Casas",
         subtitle: `WizarCon • ${getShareDateLabel()}`,
         badge: "Resultados parciales",
         status,
-        detail,
+        detail: null,
+        featureLine: HOGWARTS_MOTTO_ES,
         themeHouse,
         rows,
         hasScores: true,
         fileName: `wizarcon-resultados-parciales-${getShareDateLabel().replace(/\//g, "-")}.png`,
-        shareText: `${status} en la Copa de las Casas WizarCon.`,
+        shareText: "Resultados parciales de la Copa de las Casas WizarCon.",
     };
 }
 
@@ -601,13 +596,19 @@ function drawShareCardCanvas(cardData) {
     ctx.font = "800 38px Segoe UI, Arial, sans-serif";
     ctx.fillText(cardData.status, 164, 452);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "700 54px Segoe UI Emoji, Segoe UI, Arial, sans-serif";
-    ctx.fillText(`${HOUSE_ICONS[cardData.themeHouse] ?? "🏆"} ${cardData.themeHouse}`, 164, 512);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
-    ctx.font = "600 28px Segoe UI, Arial, sans-serif";
-    ctx.fillText(cardData.detail, 916, 512);
-    ctx.textAlign = "left";
+    if (cardData.featureLine) {
+        drawFittedText(ctx, cardData.featureLine, 164, 512, 752, 36, 700);
+    } else {
+        ctx.font = "700 54px Segoe UI Emoji, Segoe UI, Arial, sans-serif";
+        ctx.fillText(`${HOUSE_ICONS[cardData.themeHouse] ?? "🏆"} ${cardData.themeHouse}`, 164, 512);
+    }
+    if (cardData.detail) {
+        ctx.textAlign = "right";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+        ctx.font = "600 28px Segoe UI, Arial, sans-serif";
+        ctx.fillText(cardData.detail, 916, 512);
+        ctx.textAlign = "left";
+    }
 
     const rowStartY = 610;
     const rowGap = 138;
