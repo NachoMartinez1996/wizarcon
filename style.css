@@ -6,29 +6,86 @@
             --bg: #121212;
             --card: #1e1e1e;
             --text: #e0e0e0;
+            --accent: #ffd700;
+            --house-bg: linear-gradient(145deg, #121212 0%, #171717 54%, #080808 100%);
+            --house-glow: rgba(255, 215, 0, 0.13);
+        }
+
+        html {
+            min-height: 100%;
+            background: #121212;
         }
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg);
+            background: transparent;
             color: var(--text);
             margin: 0 auto;
             max-width: 920px;
+            min-height: 100vh;
             padding: 15px;
+            position: relative;
+            isolation: isolate;
+            transition: color 0.25s ease;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: var(--house-bg);
+            z-index: -2;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 16% 10%, var(--house-glow), transparent 34%),
+                radial-gradient(circle at 82% 0%, rgba(255, 255, 255, 0.08), transparent 24%),
+                linear-gradient(180deg, rgba(0, 0, 0, 0.1), #121212 92%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body.house-gryffindor {
+            --accent: #d3a625;
+            --house-bg: linear-gradient(145deg, #2b0507 0%, #740001 34%, #1f1110 64%, #d3a625 115%);
+            --house-glow: rgba(211, 166, 37, 0.25);
+        }
+
+        body.house-hufflepuff {
+            --accent: #ecb939;
+            --house-bg: linear-gradient(145deg, #0b0b0b 0%, #2d2510 42%, #ecb939 118%);
+            --house-glow: rgba(236, 185, 57, 0.23);
+        }
+
+        body.house-ravenclaw {
+            --accent: #946b2d;
+            --house-bg: linear-gradient(145deg, #071127 0%, #0e1a40 42%, #2e2418 78%, #946b2d 120%);
+            --house-glow: rgba(148, 107, 45, 0.22);
+        }
+
+        body.house-slytherin {
+            --accent: #c0c0c0;
+            --house-bg: linear-gradient(145deg, #06140c 0%, #1a472a 42%, #273029 75%, #c0c0c0 120%);
+            --house-glow: rgba(192, 192, 192, 0.2);
         }
 
         .card {
-            background: var(--card);
+            background: rgba(30, 30, 30, 0.93);
             padding: 20px;
-            border-radius: 12px;
+            border-radius: 8px;
             margin-bottom: 20px;
-            border: 1px solid #333;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28);
         }
 
         h1,
         h3 {
             text-align: center;
-            color: #ffd700;
+            color: var(--accent);
             margin-top: 0;
         }
 
@@ -142,8 +199,108 @@
 
         .total-pts {
             font-weight: bold;
-            color: #ffd700;
+            color: var(--accent);
             font-size: 1.1rem;
+        }
+
+        tr.is-leading td {
+            background: rgba(255, 255, 255, 0.055);
+        }
+
+        .winner-banner {
+            margin: 0 0 8px;
+            padding: 10px 12px;
+            border-left: 4px solid var(--accent);
+            background: rgba(255, 255, 255, 0.055);
+            color: #f5f5f5;
+            font-weight: 700;
+        }
+
+        .cup-history-card h3 {
+            margin-bottom: 14px;
+        }
+
+        .cup-history-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .cup-table-wrap {
+            overflow-x: auto;
+        }
+
+        .cup-stats {
+            display: grid;
+            gap: 14px;
+        }
+
+        .cup-stat-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .cup-stat {
+            border-left: 3px solid var(--accent);
+            padding-left: 12px;
+        }
+
+        .cup-stat span,
+        .cup-stat small {
+            display: block;
+            color: #bdbdbd;
+            font-size: 0.78rem;
+        }
+
+        .cup-stat strong {
+            display: block;
+            margin: 3px 0;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .house-win-list {
+            display: grid;
+            gap: 8px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .house-win-list div {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            color: #ddd;
+            font-size: 0.86rem;
+        }
+
+        .house-win-list strong {
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            color: #888;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .btn-finish-cup {
+            width: 100%;
+            margin-top: 20px;
+            padding: 11px;
+            border: 1px solid rgba(255, 215, 0, 0.6);
+            border-radius: 8px;
+            background: rgba(255, 215, 0, 0.12);
+            color: #ffe891;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .btn-finish-cup:active {
+            transform: scale(0.98);
         }
 
         #loading-overlay {
@@ -207,4 +364,20 @@
         .historial-container::-webkit-scrollbar-thumb {
             background: #555;
             border-radius: 3px;
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 12px;
+            }
+
+            .cup-history-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .house-win-list div {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 2px;
+            }
         }

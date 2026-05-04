@@ -8,6 +8,27 @@ const HOUSE_ICONS = {
     Ravenclaw: "🦅",
     Slytherin: "🐍",
 };
+const HOUSE_THEME_META = {
+    Gryffindor: "#740001",
+    Hufflepuff: "#ecb939",
+    Ravenclaw: "#0e1a40",
+    Slytherin: "#1a472a",
+};
+const DEFAULT_CUP_HISTORY = [
+    { copa: 1, anio: "2012", ganador: "Slytherin" },
+    { copa: 2, anio: "2013", ganador: "Gryffindor" },
+    { copa: 3, anio: "2014", ganador: "Gryffindor" },
+    { copa: 4, anio: "2015", ganador: "Ravenclaw" },
+    { copa: 5, anio: "2016", ganador: "Slytherin" },
+    { copa: 6, anio: "2017", ganador: "Ravenclaw" },
+    { copa: 7, anio: "2018", ganador: "Ravenclaw" },
+    { copa: 8, anio: "2019", ganador: "Gryffindor" },
+    { copa: 9, anio: "2020", ganador: "Gryffindor" },
+    { copa: 10, anio: "2021", ganador: "Gryffindor" },
+    { copa: 11, anio: "2022", ganador: "Gryffindor" },
+    { copa: 12, anio: "2023-2024", ganador: "Ravenclaw" },
+    { copa: 13, anio: "2025", ganador: "Ravenclaw" },
+];
 
 const ALL_ACTIVITIES_FILTER = "__all__";
 const PENDING_STATE_KEY = "wizarcon_copa_pending_state";
@@ -18,10 +39,14 @@ const statusBannerEl = document.getElementById("status-banner");
 const selectActividadEl = document.getElementById("select-actividad");
 const puntosInputEl = document.getElementById("puntos-input");
 const tablaPosicionesEl = document.getElementById("tabla-posiciones");
+const copaActualResumenEl = document.getElementById("copa-actual-resumen");
+const tablaCopasEl = document.getElementById("tabla-copas");
+const estadisticasCopasEl = document.getElementById("estadisticas-copas");
 const historialEl = document.getElementById("lista-historial");
 const filtroHistorialEl = document.getElementById("filtro-historial");
 const listaActividadesEl = document.getElementById("lista-actividades");
 const nuevaActividadEl = document.getElementById("nueva-act-nombre");
+const themeColorMetaEl = document.querySelector("meta[name=\"theme-color\"]");
 
 const firebaseConfig = {
     apiKey: "AIzaSyAiG3c-wxi7ugArZc0ScZRzWe6cI2pSl4U",
@@ -43,12 +68,46 @@ function createZeroScores() {
     };
 }
 
+function cloneScores(scores = {}) {
+    const cloned = createZeroScores();
+
+    HOUSE_ORDER.forEach((casa) => {
+        cloned[casa] = Number.parseInt(scores[casa], 10) || 0;
+    });
+
+    return cloned;
+}
+
+function normalizeScoreMap(scores) {
+    if (!scores || typeof scores !== "object") {
+        return null;
+    }
+
+    const normalized = createZeroScores();
+    let hasScoreData = false;
+
+    HOUSE_ORDER.forEach((casa) => {
+        if (Object.prototype.hasOwnProperty.call(scores, casa)) {
+            hasScoreData = true;
+        }
+
+        normalized[casa] = Number.parseInt(scores[casa], 10) || 0;
+    });
+
+    return hasScoreData ? normalized : null;
+}
+
+function createDefaultCupHistory() {
+    return DEFAULT_CUP_HISTORY.map((copa) => ({ ...copa }));
+}
+
 function createDefaultState() {
     return {
         bases: createZeroScores(),
         actividades: ["General"],
         puntosEvento: createZeroScores(),
         historial: [],
+        copas: createDefaultCupHistory(),
     };
 }
 
@@ -78,6 +137,58 @@ function normalizeHistoryEntry(entry) {
         fechaISO: String(entry.fechaISO ?? "").trim(),
         hora: String(entry.hora ?? "").trim() || "--:--",
     };
+}
+
+function normalizeCupEntry(entry) {
+    if (!entry || typeof entry !== "object") {
+        return null;
+    }
+
+    const copa = Number.parseInt(entry.copa, 10);
+    const anio = String(entry.anio ?? entry.año ?? entry.year ?? "").trim();
+    const ganador = HOUSE_ORDER.includes(entry.ganador) ? entry.ganador : "";
+
+    if (!Number.isInteger(copa) || copa <= 0 || !anio || !ganador) {
+        return null;
+    }
+
+    const normalized = { copa, anio, ganador };
+    const puntajesFinales = normalizeScoreMap(entry.puntajesFinales ?? entry.puntajes ?? entry.puntos);
+    const bases = normalizeScoreMap(entry.bases);
+    const puntosEvento = normalizeScoreMap(entry.puntosEvento);
+
+    if (puntajesFinales) {
+        normalized.puntajesFinales = puntajesFinales;
+    }
+
+    if (bases) {
+        normalized.bases = bases;
+    }
+
+    if (puntosEvento) {
+        normalized.puntosEvento = puntosEvento;
+    }
+
+    if (Array.isArray(entry.actividades)) {
+        normalized.actividades = [...new Set(
+            entry.actividades
+                .map((actividad) => String(actividad ?? "").trim())
+                .filter(Boolean),
+        )];
+    }
+
+    if (Array.isArray(entry.historial)) {
+        normalized.historial = entry.historial
+            .map((registro) => normalizeHistoryEntry(registro))
+            .filter(Boolean);
+    }
+
+    const fechaFinalizacion = String(entry.fechaFinalizacion ?? entry.cerradaEn ?? "").trim();
+    if (fechaFinalizacion) {
+        normalized.fechaFinalizacion = fechaFinalizacion;
+    }
+
+    return normalized;
 }
 
 function normalizeState(data) {
@@ -117,11 +228,240 @@ function normalizeState(data) {
             .filter(Boolean);
     }
 
+    const copasData = Array.isArray(data.copas)
+        ? data.copas
+        : Array.isArray(data.historialCopas)
+            ? data.historialCopas
+            : null;
+
+    if (copasData) {
+        const copas = copasData
+            .map((entry) => normalizeCupEntry(entry))
+            .filter(Boolean)
+            .sort((a, b) => a.copa - b.copa);
+
+        if (copas.length > 0) {
+            normalized.copas = copas;
+        }
+    }
+
     return normalized;
 }
 
 function getTotalPoints(casa) {
     return db.bases[casa] + db.puntosEvento[casa];
+}
+
+function getScoreSnapshot(state = db) {
+    const scores = createZeroScores();
+
+    HOUSE_ORDER.forEach((casa) => {
+        scores[casa] = (Number.parseInt(state.bases?.[casa], 10) || 0)
+            + (Number.parseInt(state.puntosEvento?.[casa], 10) || 0);
+    });
+
+    return scores;
+}
+
+function getOrderedCups(copas = db.copas) {
+    return [...copas].sort((a, b) => a.copa - b.copa);
+}
+
+function getLatestCup() {
+    return getOrderedCups().at(-1) ?? null;
+}
+
+function getNextCupNumber() {
+    const maxCup = getOrderedCups().reduce((max, copa) => Math.max(max, copa.copa), 0);
+    return maxCup + 1;
+}
+
+function getLeaderInfo(scores = getScoreSnapshot()) {
+    const maxScore = Math.max(...HOUSE_ORDER.map((casa) => scores[casa]));
+    const leaders = HOUSE_ORDER.filter((casa) => scores[casa] === maxScore);
+    const hasPoints = HOUSE_ORDER.some((casa) => scores[casa] !== 0);
+
+    return {
+        maxScore,
+        leaders,
+        hasPoints,
+        winner: leaders.length === 1 ? leaders[0] : null,
+    };
+}
+
+function formatHouseName(casa) {
+    return `${HOUSE_ICONS[casa]} ${casa}`;
+}
+
+function formatHouseList(casas) {
+    if (casas.length <= 1) {
+        return casas[0] ? formatHouseName(casas[0]) : "Sin datos";
+    }
+
+    const formatted = casas.map((casa) => formatHouseName(casa));
+    return `${formatted.slice(0, -1).join(", ")} y ${formatted.at(-1)}`;
+}
+
+function formatCupCount(count) {
+    return count === 1 ? "1 copa" : `${count} copas`;
+}
+
+function formatCupSpan(streak) {
+    if (!streak?.start || !streak?.end) {
+        return "";
+    }
+
+    return streak.start.copa === streak.end.copa
+        ? streak.start.anio
+        : `${streak.start.anio} a ${streak.end.anio}`;
+}
+
+function getCupStats(copas = db.copas) {
+    const orderedCups = getOrderedCups(copas);
+    const winsByHouse = createZeroScores();
+
+    orderedCups.forEach((copa) => {
+        winsByHouse[copa.ganador] += 1;
+    });
+
+    const maxWins = Math.max(...HOUSE_ORDER.map((casa) => winsByHouse[casa]));
+    const topHouses = maxWins > 0 ? HOUSE_ORDER.filter((casa) => winsByHouse[casa] === maxWins) : [];
+    const streaks = [];
+    let currentStreak = null;
+
+    orderedCups.forEach((copa) => {
+        if (currentStreak?.casa === copa.ganador) {
+            currentStreak.count += 1;
+            currentStreak.end = copa;
+        } else {
+            currentStreak = {
+                casa: copa.ganador,
+                count: 1,
+                start: copa,
+                end: copa,
+            };
+            streaks.push(currentStreak);
+        }
+    });
+
+    const bestStreakCount = Math.max(0, ...streaks.map((streak) => streak.count));
+    const bestStreaks = streaks.filter((streak) => streak.count === bestStreakCount);
+
+    return {
+        orderedCups,
+        winsByHouse,
+        maxWins,
+        topHouses,
+        bestStreakCount,
+        bestStreaks,
+        activeStreak: streaks.at(-1) ?? null,
+    };
+}
+
+function getThemeHouse() {
+    const currentLeader = getLeaderInfo();
+
+    if (currentLeader.hasPoints && currentLeader.winner) {
+        return currentLeader.winner;
+    }
+
+    return getLatestCup()?.ganador ?? null;
+}
+
+function applyHouseTheme() {
+    const themeHouse = getThemeHouse();
+
+    HOUSE_ORDER.forEach((casa) => {
+        document.body.classList.remove(`house-${casa.toLowerCase()}`);
+    });
+
+    if (themeHouse) {
+        document.body.classList.add(`house-${themeHouse.toLowerCase()}`);
+    }
+
+    themeColorMetaEl?.setAttribute("content", HOUSE_THEME_META[themeHouse] ?? "#121212");
+}
+
+function buildCurrentCupSummary(leaderInfo) {
+    if (leaderInfo.hasPoints && leaderInfo.winner) {
+        return `Va ganando ${formatHouseName(leaderInfo.winner)} con ${leaderInfo.maxScore} pts`;
+    }
+
+    if (leaderInfo.hasPoints) {
+        return `Empate en la punta: ${formatHouseList(leaderInfo.leaders)} (${leaderInfo.maxScore} pts)`;
+    }
+
+    const latestCup = getLatestCup();
+    if (latestCup) {
+        return `Última copa: ${formatHouseName(latestCup.ganador)} (${latestCup.anio})`;
+    }
+
+    return "Copa sin puntos cargados";
+}
+
+function buildCupStatsHtml(copas) {
+    const stats = getCupStats(copas);
+
+    if (stats.orderedCups.length === 0) {
+        return '<p class="empty-state">No hay copas registradas.</p>';
+    }
+
+    const bestStreak = stats.bestStreaks[0];
+    const activeStreak = stats.activeStreak;
+    const bestStreakHouses = [...new Set(stats.bestStreaks.map((streak) => streak.casa))];
+
+    return `
+        <div class="cup-stat-list">
+            <div class="cup-stat">
+                <span>Casa con más copas ganadas</span>
+                <strong>${formatHouseList(stats.topHouses)}</strong>
+                <small>${formatCupCount(stats.maxWins)}</small>
+            </div>
+            <div class="cup-stat">
+                <span>Casa con la mejor racha</span>
+                <strong>${formatHouseList(bestStreakHouses)}</strong>
+                <small>${formatCupCount(stats.bestStreakCount)} seguidas (${escapeHtml(formatCupSpan(bestStreak))})</small>
+            </div>
+            <div class="cup-stat">
+                <span>Racha vigente</span>
+                <strong>${formatHouseName(activeStreak.casa)}</strong>
+                <small>${formatCupCount(activeStreak.count)} (${escapeHtml(formatCupSpan(activeStreak))})</small>
+            </div>
+        </div>
+        <div class="house-win-list">
+            ${HOUSE_ORDER.map((casa) => `
+                <div>
+                    <span>${formatHouseName(casa)}</span>
+                    <strong>${formatCupCount(stats.winsByHouse[casa])}</strong>
+                </div>
+            `).join("")}
+        </div>
+    `;
+}
+
+function renderCupHistory() {
+    if (!tablaCopasEl || !estadisticasCopasEl) {
+        return;
+    }
+
+    const copas = getOrderedCups();
+
+    if (copas.length === 0) {
+        tablaCopasEl.innerHTML = '<tr><td class="empty-state">No hay copas registradas.</td></tr>';
+    } else {
+        tablaCopasEl.innerHTML = `
+            <tr><th>Copa</th><th>Año</th><th>Ganador</th></tr>
+            ${copas.map((copa) => `
+                <tr>
+                    <td>${copa.copa}</td>
+                    <td>${escapeHtml(copa.anio)}</td>
+                    <td>${HOUSE_ICONS[copa.ganador]} ${escapeHtml(copa.ganador)}</td>
+                </tr>
+            `).join("")}
+        `;
+    }
+
+    estadisticasCopasEl.innerHTML = buildCupStatsHtml(copas);
 }
 
 function hideLoadingOverlay() {
@@ -187,6 +527,7 @@ function readLocalState(storageKey) {
             "puntosEvento",
             "actividades",
             "historial",
+            "copas",
         ].some((key) => Object.prototype.hasOwnProperty.call(state, key));
 
         return hasKnownStateShape ? normalizeState(state) : null;
@@ -389,16 +730,26 @@ function renderizarUI(selectedActivity = getSelectedActivity(), selectedHistoryA
             .join("");
     }
 
-    const casasOrdenadas = [...HOUSE_ORDER].sort((a, b) => getTotalPoints(b) - getTotalPoints(a));
+    const puntajesActuales = getScoreSnapshot();
+    const leaderInfo = getLeaderInfo(puntajesActuales);
+    const casasOrdenadas = [...HOUSE_ORDER].sort((a, b) => puntajesActuales[b] - puntajesActuales[a]);
+
+    if (copaActualResumenEl) {
+        copaActualResumenEl.textContent = buildCurrentCupSummary(leaderInfo);
+        copaActualResumenEl.className = `winner-banner ${leaderInfo.winner ? `winner-${leaderInfo.winner.toLowerCase()}` : ""}`;
+    }
     tablaPosicionesEl.innerHTML = `
         <tr><th>Casa</th><th style="text-align:right">Total</th></tr>
         ${casasOrdenadas.map((casa) => `
-            <tr>
+            <tr class="${leaderInfo.winner === casa ? "is-leading" : ""}">
                 <td>${HOUSE_ICONS[casa]} ${escapeHtml(casa)}</td>
-                <td style="text-align:right" class="total-pts">${getTotalPoints(casa)}</td>
+                <td style="text-align:right" class="total-pts">${puntajesActuales[casa]}</td>
             </tr>
         `).join("")}
     `;
+
+    renderCupHistory();
+    applyHouseTheme();
 
     HOUSE_ORDER.forEach((casa) => {
         document.getElementById(`base-${casa}`).value = db.bases[casa];
@@ -495,12 +846,81 @@ window.borrarActividad = async (index) => {
     await guardarCambios();
 };
 
-window.resetearTodo = async () => {
-    if (!confirm("¿Reiniciar toda la copa? Esto borrará el historial también.")) {
+window.finalizarCopa = async () => {
+    const puntajesFinales = getScoreSnapshot();
+    const leaderInfo = getLeaderInfo(puntajesFinales);
+
+    if (!leaderInfo.hasPoints) {
+        showStatus("Cargá puntos antes de finalizar la copa.", "warning");
         return;
     }
 
+    if (!leaderInfo.winner) {
+        showStatus(`Hay empate en la punta: ${formatHouseList(leaderInfo.leaders)}. Definí un ganador antes de cerrar.`, "warning");
+        return;
+    }
+
+    const anioIngresado = prompt("Año de la copa (por ejemplo 2026 o 2026-2027):", String(new Date().getFullYear()));
+    if (anioIngresado === null) {
+        return;
+    }
+
+    const anio = anioIngresado.trim();
+    if (!anio) {
+        showStatus("Ingresá un año para finalizar la copa.", "warning");
+        return;
+    }
+
+    if (!/^\d{4}(?:-\d{4})?$/.test(anio)
+        && !confirm("El año no tiene el formato habitual. ¿Guardar igual?")) {
+        return;
+    }
+
+    if (db.copas.some((copa) => copa.anio.toLowerCase() === anio.toLowerCase())
+        && !confirm("Ya existe una copa con ese año. ¿Agregar otra igual?")) {
+        return;
+    }
+
+    const numeroCopa = getNextCupNumber();
+    if (!confirm(`¿Finalizar Copa ${numeroCopa} (${anio}) con ${leaderInfo.winner} como ganador?`)) {
+        return;
+    }
+
+    const nuevaCopa = {
+        copa: numeroCopa,
+        anio,
+        ganador: leaderInfo.winner,
+        puntajesFinales,
+        bases: cloneScores(db.bases),
+        puntosEvento: cloneScores(db.puntosEvento),
+        actividades: [...db.actividades],
+        historial: db.historial.map((registro) => ({ ...registro })),
+        fechaFinalizacion: new Date().toISOString(),
+    };
+    const actividadesActuales = db.actividades.length > 0 ? [...db.actividades] : ["General"];
+
+    db.copas = getOrderedCups([...db.copas, nuevaCopa]);
+    db.bases = createZeroScores();
+    db.puntosEvento = createZeroScores();
+    db.historial = [];
+    db.actividades = actividadesActuales;
+
+    renderizarUI();
+    await guardarCambios();
+
+    if (!hasPendingLocalChanges) {
+        showStatus(`Copa ${numeroCopa} finalizada: ${leaderInfo.winner} (${anio}).`, "info");
+    }
+};
+
+window.resetearTodo = async () => {
+    if (!confirm("¿Reiniciar la copa actual? Esto borrará puntos, actividades y movimientos sin tocar el historial de copas.")) {
+        return;
+    }
+
+    const copasArchivadas = db.copas;
     db = createDefaultState();
+    db.copas = copasArchivadas;
     renderizarUI();
     await guardarCambios();
 };

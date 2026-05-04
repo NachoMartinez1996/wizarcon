@@ -39,7 +39,18 @@
 
     <div class="card">
         <h3>📊 Posiciones en Vivo</h3>
+        <p id="copa-actual-resumen" class="winner-banner"></p>
         <table id="tabla-posiciones"></table>
+    </div>
+
+    <div class="card cup-history-card">
+        <h3>🏰 Historial de Copas</h3>
+        <div class="cup-history-layout">
+            <div class="cup-table-wrap">
+                <table id="tabla-copas"></table>
+            </div>
+            <div id="estadisticas-copas" class="cup-stats"></div>
+        </div>
     </div>
 
     <div class="card">
@@ -67,9 +78,10 @@
                 style="background:#4CAF50; color:white; border:none; border-radius:8px; padding:0 15px;">+</button>
         </div>
         <div id="lista-actividades" style="margin-top:15px;"></div>
+        <button onclick="finalizarCopa()" class="btn-finish-cup">🏁 Finalizar Copa</button>
         <button onclick="resetearTodo()"
-            style="width:100%; background:none; border:1px solid #ff4444; color:#ff4444; margin-top:20px; padding:10px; border-radius:8px;">🗑️
-            Reiniciar Copa Completa</button>
+            style="width:100%; background:none; border:1px solid #ff4444; color:#ff4444; margin-top:10px; padding:10px; border-radius:8px;">🗑️
+            Reiniciar Copa Actual</button>
     </div>
 
     <script type="module" src="script.js"></script>
